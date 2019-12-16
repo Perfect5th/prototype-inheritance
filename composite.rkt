@@ -10,6 +10,13 @@
 (define-syntax-rule (new objname [(f v) ...])
   (obj objname (list (list (quote f) v) ...)))
 
+(define-syntax class
+  (syntax-rules (extends)
+    [(_ name [(f v) ...]) (define name (new Object [(f v) ...]))]
+    [(_ name extends super [(f v) ...]) (define name (new super [(f v) ...]))]))
+
+(define Object (λ (msg) (void)))
+
 (define (obj superobj fields)
   (λ (msg)
     (let ([field (assoc msg fields)])
@@ -18,24 +25,24 @@
           (superobj msg)))))
 
 ;; Object prototype definitions
-(define Object (λ (msg) (void)))
+(class File
+  [(name "")
+   (printName
+    (λ (self depth)
+      (printf "~a~n" (get self name))))])
 
-(define File (new Object [(name "")
-                          (printName
-                           (λ (self depth)
-                             (printf "~a~n" (get self name))))]))
-
-(define Dir (new File [(printName
-                        (λ (self depth)
-                          (begin
-                            (printf "~a/~n" (get self name))
-                            (map (λ (child)
-                                   (begin
-                                     (printf "~a" (string-append* (make-list (+ depth 1) "    ")))
-                                     (-> child printName (+ depth 1))))
-                                   (get self children))
-                            (void))))
-                       (children empty)]))
+(class Dir extends File
+  [(children empty)
+   (printName
+    (λ (self depth)
+      (begin
+        (printf "~a/~n" (get self name))
+        (map (λ (child)
+               (begin
+                 (printf "~a" (string-append* (make-list (+ depth 1) "    ")))
+                 (-> child printName (+ depth 1))))
+             (get self children))
+        (void))))])
 
 ;; Concrete object definitions
 (define file1 (new File ([name "file1"])))
